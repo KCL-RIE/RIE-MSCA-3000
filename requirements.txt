@@ -1,0 +1,10 @@
+csv-ical==2.0.6
+icalendar==4.1.1
+numpy==1.26.2
+pandas==2.1.4
+python-dateutil==2.8.2
+pytz==2023.3.post1
+-e git+https://github.com/KCL-RIE/RIE-MSCA-3000@7fce5e0c8271aa4d81006222ccd93483ace95415#egg=RIE_MSCA_3000
+six==1.16.0
+tk==0.1.0
+tzdata==2023.3
