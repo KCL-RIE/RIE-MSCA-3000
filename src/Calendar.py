@@ -76,20 +76,19 @@ def view_db(db):
     for date in dates:
         print(date, db_sorted[date])
 
-def init_db():
-    here = lambda x: os.path.abspath(os.path.join(os.path.dirname(__file__), x))
-
-    csv_files_Minseok = here('../resources/csv_files/RYUMinseok.csv')
-    df1 = pd.read_csv(csv_files_Minseok, names=['Start Datetime', 'End Datetime','Info', 'Classroom'])
-
-    csv_files_Jun = here('../resources/csv_files/ZHANGJun.csv')
-    df2 = pd.read_csv(csv_files_Jun, names=['Start Datetime', 'End Datetime','Info', 'Classroom'])
-
+def init_db(df):
     with closing(shelve.open('members_lessons.db', 'c', writeback=True)) as db:
-        # Make dictionary of linked lists (in unsorted JIT order)
-        make_datetime_shelf(df1, db)
-        make_datetime_shelf(df2, db)
-        view_db(db)
+        make_datetime_shelf(df, db) # Make dict of linked lists (in unsorted JIT order)
+        # view_db(db)
+
+def init_db_all(csv_folder):
+    for dirpath, dirnames, filenames in os.walk(csv_folder):
+        for filename in filenames:
+            if filename.endswith('.csv'):
+
+                with open(os.path.join(dirpath, filename)) as f:
+                    df = pd.read_csv(f, names=['Start Datetime', 'End Datetime','Info', 'Classroom'])
+                    init_db(df)
 
 def merge_db():
     print("Merge database!")
@@ -101,10 +100,15 @@ def merge_db():
             print(date, db[date])
         view_db(db)
 
+def driver(csv_folder):
+    init_db_all(csv_folder)
+    merge_db()
 
 if __name__=="__main__":
-    init_db()
-    merge_db() # DEBUG: Why not printing anything at this stage ???
+    # TIP: https://pieriantraining.com/iterate-over-files-in-directory-using-python/
+    fullpath_from_relpath = lambda x: os.path.abspath(os.path.join(os.path.dirname(__file__), x))
+    csv_folder = fullpath_from_relpath('../resources/csv_files/')
+    driver(csv_folder)
 
 
 ###########
