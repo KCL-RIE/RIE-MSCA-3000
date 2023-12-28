@@ -19,96 +19,96 @@ from contextlib import closing
 # T = TypeVar('T')
 
 
-# class Calendar:
-#     def __init__(self, csv_files):
-#         self.csv_files = csv_files
+class Calendar:
+    def __init__(self, csv_folder):
+        self.csv_folder = csv_folder
 
-# Convenience func solely reserved as helper in viewing created shelf on terminal
-### sort_shelf :: {} -> {}
-def sort_shelf(dic):
-    sorted_shelf = {}
-    for i, j in dic.items():
-        sorted_shelf[i] = sorted(j)
-    return sorted_shelf
-
-
-### make_datetime_shelf :: pd.DataFrame -> shelf -> None
-def make_datetime_shelf(df, db):
-    for start_datetime, end_datetime in zip(df['Start Datetime'], df['End Datetime']):
-        year_month_date = start_datetime[:10]
-        # start_end_time  = start_datetime[11:] + '-' + end_datetime[11:]
-        start_end_time  = [start_datetime[11:], end_datetime[11:]]
-
-        if year_month_date in db:
-            db[year_month_date].append(start_end_time)
-        else:
-            db[year_month_date] = [start_end_time]
+    # Convenience func solely reserved as helper in viewing created shelf on terminal
+    ### sort_shelf :: {} -> {}
+    def sort_shelf(self, dic):
+        sorted_shelf = {}
+        for i, j in dic.items():
+            sorted_shelf[i] = sorted(j)
+        return sorted_shelf
 
 
-### merge_time_conflict :: [[]] -> [[]]
-def merge_time_conflict(intervals):
-    while len(intervals) != 0:
-        # Sort by start time
-        sorted_intervals = sorted(intervals)
-        # Initialise merged_intervals with the earliest meeting
-        merged_intervals = [sorted_intervals[0]]
+    ### make_datetime_shelf :: pd.DataFrame -> shelf -> None
+    def make_datetime_shelf(self, df, db):
+        for start_datetime, end_datetime in zip(df['Start Datetime'], df['End Datetime']):
+            year_month_date = start_datetime[:10]
+            # start_end_time  = start_datetime[11:] + '-' + end_datetime[11:]
+            start_end_time  = [start_datetime[11:], end_datetime[11:]]
 
-        for start_current_interval, end_current_interval in sorted_intervals:
-            start_last_merged_interval, end_last_merged_interval = merged_intervals[-1]
-            # If the current interval overlaps with the last merged interval, use the
-            # later end time of the two to extend interval
-            if (end_last_merged_interval >= start_current_interval):
-                merged_intervals[-1] = [start_last_merged_interval,
-                                       max(end_last_merged_interval,
-                                           end_current_interval)]
+            if year_month_date in db:
+                db[year_month_date].append(start_end_time)
             else:
-                # Add the current interval since it doesn't overlap
-                merged_intervals.append([start_current_interval, end_current_interval])
-
-        return merged_intervals
+                db[year_month_date] = [start_end_time]
 
 
-def view_db(db):
-    # Now sort linked list values of above dictionary for merge_time_conflict()
-    db_sorted = sort_shelf(db)
-    dates = list(db_sorted.keys())
-    dates.sort()
-    for date in dates:
-        print(date, db_sorted[date])
+    ### merge_time_conflict :: [[]] -> [[]]
+    def merge_time_conflict(self, intervals):
+        while len(intervals) != 0:
+            # Sort by start time
+            sorted_intervals = sorted(intervals)
+            # Initialise merged_intervals with the earliest meeting
+            merged_intervals = [sorted_intervals[0]]
 
-def init_db(df):
-    with closing(shelve.open('members_lessons.db', 'c', writeback=True)) as db:
-        make_datetime_shelf(df, db) # Make dict of linked lists (in unsorted JIT order)
-        # view_db(db)
+            for start_current_interval, end_current_interval in sorted_intervals:
+                start_last_merged_interval, end_last_merged_interval = merged_intervals[-1]
+                # If the current interval overlaps with the last merged interval, use the
+                # later end time of the two to extend interval
+                if (end_last_merged_interval >= start_current_interval):
+                    merged_intervals[-1] = [start_last_merged_interval,
+                                           max(end_last_merged_interval,
+                                               end_current_interval)]
+                else:
+                    # Add the current interval since it doesn't overlap
+                    merged_intervals.append([start_current_interval, end_current_interval])
 
-def init_db_all(csv_folder):
-    for dirpath, dirnames, filenames in os.walk(csv_folder):
-        for filename in filenames:
-            if filename.endswith('.csv'):
+            return merged_intervals
 
-                with open(os.path.join(dirpath, filename)) as f:
-                    df = pd.read_csv(f, names=['Start Datetime', 'End Datetime','Info', 'Classroom'])
-                    init_db(df)
 
-def merge_db():
-    print("Merge database!")
-    with closing(shelve.open('members_lessons.db', 'c', writeback=True)) as db:
-        dates = list(db.keys())
-        print("Length of dates: ", len(dates))
+    def view_db(self, db):
+        # Now sort linked list values of above dictionary for merge_time_conflict()
+        db_sorted = self.sort_shelf(db)
+        dates = list(db_sorted.keys())
+        dates.sort()
         for date in dates:
-            db[date] = merge_time_conflict(db[date])
-            print(date, db[date])
-        view_db(db)
+            print(date, db_sorted[date])
 
-def driver(csv_folder):
-    init_db_all(csv_folder)
-    merge_db()
+    def init_db(self, df):
+        with closing(shelve.open('members_lessons.db', 'c', writeback=True)) as db:
+            self.make_datetime_shelf(df, db) # Make dict of linked lists (in unsorted JIT order)
+            # self.view_db(db)
+
+    def init_db_all(self):
+        for dirpath, dirnames, filenames in os.walk(self.csv_folder):
+            for filename in filenames:
+                if filename.endswith('.csv'):
+                    with open(os.path.join(dirpath, filename)) as f:
+                        df = pd.read_csv(f, names=['Start Datetime', 'End Datetime','Info', 'Classroom'])
+                        self.init_db(df)
+
+    def merge_db(self):
+        with closing(shelve.open('members_lessons.db', 'c', writeback=True)) as db:
+            dates = list(db.keys())
+            print("Length of dates: ", len(dates))
+            for date in dates:
+                db[date] = self.merge_time_conflict(db[date])
+                print(date, db[date])
+
+            # Debug purpose ONLY
+            self.view_db(db)
+
 
 if __name__=="__main__":
     # TIP: https://pieriantraining.com/iterate-over-files-in-directory-using-python/
     fullpath_from_relpath = lambda x: os.path.abspath(os.path.join(os.path.dirname(__file__), x))
     csv_folder = fullpath_from_relpath('../resources/csv_files/')
-    driver(csv_folder)
+
+    ca = Calendar(csv_folder)
+    ca.init_db_all()
+    ca.merge_db()
 
 
 ###########
