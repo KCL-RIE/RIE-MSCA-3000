@@ -1,42 +1,64 @@
-# Example Dates
-# print(type(df['Start Datetime'][10]))
-#      2024-01-16 11:30:00+00:00 + 2024-01-16 13:30:00+00:00
-# -->  2024-01-16  :  [ [11:30:00+00:00-13:30:00+00:00], [... ...] ]
+'''
+File Name    : Calendar.py
+Author       : Minseok Ryu
+Date Created : 25/12/2023
+Version      : 1.2
+Purpose      : Module handling interval merging
 
-# Algorithm Pseudo-code
-# 1) Sort by date  (key)
-# 2) Within each date, Sort by times (values)
-# 3) Apply merge algo for all members
+Algorithm Pseudo-code
+1) Sort by date  (key)
+2) Within each date, Sort by times (values)
+3) Apply merge algo for all members
+'''
+
 
 import os
 import pandas as pd
 import shelve
 from contextlib import closing
-# from typing import TypeVar
-
-
-# Pythonic custom type hint to supercede Haskell arrow scheme
-# T = TypeVar('T')
 
 
 class Calendar:
-    def __init__(self, csv_folder):
-        self.csv_folder = csv_folder
+    '''
+    Collection of database handling methods for merging and viewing intervals.
+    '''
+    def __init__(self, csv_folder, mode='ALL'):
+        '''
+        Constructor.
 
-    # Convenience func solely reserved as helper in viewing created shelf on terminal
-    ### sort_shelf :: {} -> {}
-    def sort_shelf(self, dic):
+        :param csv_folder: Directory pointing to where CSV files stored
+        :param mode:      'ALL', 'ADMIN', or 'MANUAL'
+        '''
+        self.csv_folder = csv_folder
+        self.mode       = mode
+
+
+    def _sort_shelf(self, dic):
+        '''
+        _sort_shelf :: {} -> {}
+
+        Convenience func solely reserved as helper in viewing created shelf on terminal.
+
+        :param dic: Unsorted dictionary
+        :return:    Sorted dictionary
+        '''
         sorted_shelf = {}
         for i, j in dic.items():
             sorted_shelf[i] = sorted(j)
         return sorted_shelf
 
+    def _make_datetime_shelf(self, df, db):
+        '''
+        _make_datetime_shelf :: pd.DataFrame -> shelf -> None
 
-    ### make_datetime_shelf :: pd.DataFrame -> shelf -> None
-    def make_datetime_shelf(self, df, db):
+        Creates shelf database.
+
+        :param df: CSV file data
+        :param db: Shelf database
+        :return:   Database of data : intervals
+        '''
         for start_datetime, end_datetime in zip(df['Start Datetime'], df['End Datetime']):
-            year_month_date = start_datetime[:10]
-            # start_end_time  = start_datetime[11:] + '-' + end_datetime[11:]
+            year_month_date =  start_datetime[:10]
             start_end_time  = [start_datetime[11:], end_datetime[11:]]
 
             if year_month_date in db:
@@ -44,9 +66,15 @@ class Calendar:
             else:
                 db[year_month_date] = [start_end_time]
 
+    def _merge_time_conflict(self, intervals):
+        '''
+        merge_time_conflict :: [[]] -> [[]]
 
-    ### merge_time_conflict :: [[]] -> [[]]
-    def merge_time_conflict(self, intervals):
+        Union of intervals.
+
+        :param intervals: Start and End pair per participant's lecture / tutorial
+        :return:          Merged intervals
+        '''
         while len(intervals) != 0:
             # Sort by start time
             sorted_intervals = sorted(intervals)
@@ -67,29 +95,87 @@ class Calendar:
 
             return merged_intervals
 
+    def _init_db_helper(self, df, db_name):
+        '''
+        _init_db_helper :: pd.DataFrame -> None
 
-    def view_db(self, db):
-        # Now sort linked list values of given shelf dict for merge_time_conflict()
-        db_sorted = self.sort_shelf(db)
-        dates = list(db_sorted.keys())
-        dates.sort()
-        for date in dates:
-            print(date, db_sorted[date])
+        Make dictionary of linked lists (in unsorted JIT order).
 
-    def init_db(self, df):
-        with closing(shelve.open('members_lessons.db', 'c', writeback=True)) as db:
-            self.make_datetime_shelf(df, db) # Make dict of linked lists (in unsorted JIT order)
-            # self.view_db(db)
+        :param df:      Start and End pair per participant's lecture / tutorial
+        :param db_name: e.g 'members_lessons.db'
+        :return:        Shelf created
+        '''
+        with closing(shelve.open(db_name, 'c', writeback=True)) as db:
+            self._make_datetime_shelf(df, db)
+            # self.console_view_db(db) # DEBUG MODE ONLY
+
+
+    def init_db(self):
+        '''
+        init_db :: None -> None
+
+        Wrapper around shelf database creation.
+        '''
+        if self.mode == 'ALL':
+            self.init_db_all()
+        elif self.mode == 'ADMIN':
+            self.init_db_admin()
+        elif self.mode == 'MANUAL':
+            self.init_db_manual()
+        else:
+            print("ERROR: MODE NOT EXIST!")
 
     def init_db_all(self):
+        '''
+        init_db_all :: None -> None
+
+        ./
+        '''
         for dirpath, dirnames, filenames in os.walk(self.csv_folder):
             for filename in filenames:
                 if filename.endswith('.csv'):
                     with open(os.path.join(dirpath, filename)) as f:
                         df = pd.read_csv(f, names=['Start Datetime', 'End Datetime','Info', 'Classroom'])
-                        self.init_db(df)
+                        self._init_db_helper(df, 'members_lessons.db')
+
+    def init_db_admin(self):
+        '''
+        init_db_admin :: None -> None
+
+        ./
+        '''
+        pass
+
+    def init_db_manual(self):
+        '''
+        init_db_manual :: None -> None
+
+        ./
+        '''
+        pass
+
 
     def merge_db(self):
+        '''
+        merge_db :: None -> None
+
+        Wrapper around interval merging.
+        '''
+        if self.mode == 'ALL':
+            self.merge_db_all()
+        elif self.mode == 'ADMIN':
+            self.merge_db_admin()
+        elif self.mode == 'MANUAL':
+            self.merge_db_manual()
+        else:
+            print("ERROR: MODE NOT EXIST!")
+
+    def merge_db_all(self):
+        '''
+        merge_db_all :: None -> None
+
+        ./
+        '''
         with closing(shelve.open('members_lessons.db', 'c', writeback=True)) as db:
             dates = list(db.keys())
             print("Length of dates: ", len(dates))
@@ -99,7 +185,37 @@ class Calendar:
                 # print(date, db[date])
 
             # DEBUG MODE ONLY
-            self.view_db(db)
+            self.console_view_db(db)
+
+    def merge_db_admin(self):
+        '''
+        merge_db_admin :: None -> None
+
+        ./
+        '''
+        pass
+
+    def merge_db_manual(self):
+        '''
+        merge_db_manual :: None -> None
+
+        ./
+        '''
+        pass
+
+
+    def console_view_db(self, db):
+        '''
+        console_view_db :: shelf -> None
+
+        Display line-by-line console output of shelf database
+        '''
+        # Now sort linked list values of given shelf dict for merge_time_conflict()
+        db_sorted = self._sort_shelf(db)
+        dates = list(db_sorted.keys())
+        dates.sort()
+        for date in dates:
+            print(date, db_sorted[date])
 
 
 if __name__=="__main__":

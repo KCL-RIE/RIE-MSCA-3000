@@ -21,19 +21,6 @@ def extract_name(filepath):
 	csv_filename = ''.join(ics_filename[0] + ics_filename[-1][:-4] + ".csv")
 	return csv_filename
 
-# 11th
-# Column B | 2023-10-06 15:00:00+00:00 --> 
-# Column C | 2024-02-01 14:00:00+00:00
-def csvToGrid():
-	pass
-
-## RESOURCES ON MERGING MEETING TIMES
-## O(nlogn)
-# https://2--tu.blogspot.com/2019/09/merging-meeting-times-greedy-interview.html?zx=7f95238e5829394
-# https://stackoverflow.com/questions/60432998/resolve-schedule-conflicts-using-python
-# https://stackoverflow.com/questions/65580609/given-a-list-of-appointments-find-all-the-conflicting-appointments
-def mergeMeetings():
-	pass
 
 ## Example CSV Row :
 # A5 : 5PASNMCN MOLECULAR AND C SEM2 000001/Sem/02
@@ -59,6 +46,28 @@ def main():
 	convert.make_csv()
 	convert.save_csv(convert.CSV_FILE_LOCATION)
 	# convert.save_csv('~/Python/RIE-MSCA-3000/resources/csv_files/RYUMinseok.ics')
+
+# def todo():
+# 	ics_folder = '/PATH/TO/FOLDER/'
+# 	csv_folder = Csv-library.csv_from_ics(ics_folder)
+
+#	# db name: members_lessons.db
+
+# 	ca_all = Calendar(csv_folder, mode='ALL')
+#     ca_all.init_db()
+#     ca_all.merge_db()
+#     ca_all.view()
+
+#     ca_admin = Calendar(csv_folder, mode='ADMIN')
+#     ca_admin.init_db()
+#     ca_admin.merge_db()
+#     ca_admin.view()
+
+#     # Question: UI Drag-N-Drop Manual ?
+#     ca_manual = Calendar(csv_folder, mode='MANUAL')
+#     ca_manual.init_db()
+#     ca_manual.merge_db()
+#     ca_manual.view()
 
 if __name__=="__main__":
 	main()
